@@ -10,12 +10,15 @@ import hudson.plugins.jira.JiraSession;
 import hudson.plugins.jira.JiraSite;
 import net.sf.json.JSONObject;
 
+import org.joda.time.DateTime;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.Stapler;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -27,15 +30,17 @@ public class JiraVersionParameterDefinition extends ParameterDefinition {
     private String projectKey;
     private boolean showReleased = false;
     private boolean showArchived = false;
+    private boolean showFuture = false;
     private Pattern pattern = null;
 
     @DataBoundConstructor
-    public JiraVersionParameterDefinition(String name, String description, String jiraProjectKey, String jiraReleasePattern, String jiraShowReleased, String jiraShowArchived) {
+    public JiraVersionParameterDefinition(String name, String description, String jiraProjectKey, String jiraReleasePattern, String jiraShowReleased, String jiraShowArchived, String jiraShowFuture) {
         super(name, description);
         setJiraProjectKey(jiraProjectKey);
         setJiraReleasePattern(jiraReleasePattern);
         setJiraShowReleased(jiraShowReleased);
         setJiraShowArchived(jiraShowArchived);
+        setJiraShowFuture(jiraShowFuture);
     }
 
     @Override
@@ -53,11 +58,11 @@ public class JiraVersionParameterDefinition extends ParameterDefinition {
         JiraVersionParameterValue value = req.bindJSON(JiraVersionParameterValue.class, formData);
         return value;
     }
-    
+
     @Override
-	public ParameterValue createValue(CLICommand command, String value) throws IOException, InterruptedException {
-		return new JiraVersionParameterValue(getName(), value);
-	}
+    public ParameterValue createValue(CLICommand command, String value) throws IOException, InterruptedException {
+        return new JiraVersionParameterValue(getName(), value);
+    }
 
     public List<JiraVersionParameterDefinition.Result> getVersions() throws IOException {
         AbstractProject<?, ?> context = Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class);
@@ -91,6 +96,9 @@ public class JiraVersionParameterDefinition extends ParameterDefinition {
 
         // Filter archived versions
         if (!showArchived && version.isArchived()) return false;
+
+        // Filter future versions before today at midnight
+        if (showFuture && version.getReleaseDate().isBefore(new DateTime().toDateMidnight())) return false;
 
         return true;
     }
@@ -133,6 +141,14 @@ public class JiraVersionParameterDefinition extends ParameterDefinition {
         this.showArchived = Boolean.parseBoolean(showArchived);
     }
 
+    public String getJiraShowFuture() {
+        return Boolean.toString(showFuture);
+    }
+
+    public void setJiraShowFuture(String showFuture) {
+        this.showFuture = Boolean.parseBoolean(showFuture);
+    }
+
 
     @Extension
     public static class DescriptorImpl extends ParameterDescriptor {
@@ -144,11 +160,14 @@ public class JiraVersionParameterDefinition extends ParameterDefinition {
 
     public static class Result {
         public final String name;
+        public final String displayName;
         public final Long id;
+        private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         public Result(final Version version) {
             this.name = version.getName();
             this.id = version.getId();
+            this.displayName = version.getName() + " (Release date: " + simpleDateFormat.format(version.getReleaseDate().toDate()) + ")";
         }
     }
 }

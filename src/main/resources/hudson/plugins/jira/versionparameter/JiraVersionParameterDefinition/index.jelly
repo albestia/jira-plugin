@@ -14,7 +14,7 @@
           <!-- everything is fine, we can display the drop-down list to the user -->
           <select name="version">
             <j:forEach var="version" items="${it.versions}">
-              <option value="${version.name}">${version.name}</option>
+              <option value="${version.name}">${version.displayName}</option>
             </j:forEach>
           </select>
         </j:otherwise>

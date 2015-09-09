@@ -15,6 +15,9 @@
 	<f:entry title="${%Show Archived Versions}" field="jiraShowArchived">
         <f:checkbox />
     </f:entry>
+	<f:entry title="${%Show Only Future Versions}" field="jiraShowFuture">
+        <f:checkbox />
+    </f:entry>
 	<f:entry title="${%Release Name Pattern}" field="jiraReleasePattern">
         <f:textbox />
     </f:entry>
