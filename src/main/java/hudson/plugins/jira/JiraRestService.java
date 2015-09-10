@@ -24,6 +24,7 @@ import com.atlassian.jira.rest.client.api.domain.input.VersionInput;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import org.codehaus.jettison.json.JSONObject;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.fluent.Content;
@@ -134,6 +135,23 @@ public class JiraRestService {
         } catch (Exception e) {
             LOGGER.warning("jira rest client get issue from jql search error. cause: " + e.getMessage());
             return Collections.emptyList();
+        }
+    }
+
+    public boolean hasVersionUnresolvedIssues(String versionId) {
+        final URIBuilder builder = new URIBuilder(uri)
+                .setPath(String.format("/rest/api/2/version/%s/unresolvedIssueCount", versionId));
+
+        try {
+            URI uri = builder.build();
+            final String response = buildGetRequest(uri).execute().returnContent().asString();
+
+            JSONObject json = new JSONObject(response);
+
+            return (Integer.parseInt(json.getString("issuesUnresolvedCount")) == 0) ? true : false;
+
+        } catch (Exception e) {
+            LOGGER.warning("jira rest client get unresolved issues count in version returned an error. cause: " + e.getMessage());
         }
     }
 
