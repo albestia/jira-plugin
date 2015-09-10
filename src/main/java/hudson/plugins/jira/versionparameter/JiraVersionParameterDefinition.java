@@ -31,16 +31,19 @@ public class JiraVersionParameterDefinition extends ParameterDefinition {
     private boolean showReleased = false;
     private boolean showArchived = false;
     private boolean showFuture = false;
+    private boolean showResolved = false;
     private Pattern pattern = null;
 
     @DataBoundConstructor
-    public JiraVersionParameterDefinition(String name, String description, String jiraProjectKey, String jiraReleasePattern, String jiraShowReleased, String jiraShowArchived, String jiraShowFuture) {
+    public JiraVersionParameterDefinition(String name, String description, String jiraProjectKey, String jiraReleasePattern, String jiraShowReleased,
+                                          String jiraShowArchived, String jiraShowFuture, String jiraShowResolved) {
         super(name, description);
         setJiraProjectKey(jiraProjectKey);
         setJiraReleasePattern(jiraReleasePattern);
         setJiraShowReleased(jiraShowReleased);
         setJiraShowArchived(jiraShowArchived);
         setJiraShowFuture(jiraShowFuture);
+        setJiraShowResolved(jiraShowResolved);
     }
 
     @Override
@@ -85,7 +88,7 @@ public class JiraVersionParameterDefinition extends ParameterDefinition {
         return projectVersions;
     }
 
-    private boolean match(Version version) {
+    private boolean match(Version version) throws IOException {
         // Match regex if it exists
         if (pattern != null) {
             if (!pattern.matcher(version.getName()).matches()) return false;
@@ -99,6 +102,16 @@ public class JiraVersionParameterDefinition extends ParameterDefinition {
 
         // Filter future versions before today at midnight
         if (showFuture && version.getReleaseDate().isBefore(new DateTime().toDateMidnight())) return false;
+
+        // Filter all issues resolved versions
+        if (showResolved) {
+            AbstractProject<?, ?> context = Stapler.getCurrentRequest().findAncestorObject(AbstractProject.class);
+
+            JiraSite site = JiraSite.get(context);
+            JiraSession session = site.createSession();
+            if(version.getId() == null) return false;
+            return !session.hasVersionUnresolvedIssues(version.getId());
+        }
 
         return true;
     }
@@ -149,6 +162,13 @@ public class JiraVersionParameterDefinition extends ParameterDefinition {
         this.showFuture = Boolean.parseBoolean(showFuture);
     }
 
+    public String getJiraShowResolved() {
+        return Boolean.toString(showResolved);
+    }
+
+    public void setJiraShowResolved(String showResolved) {
+        this.showResolved = Boolean.parseBoolean(showResolved);
+    }
 
     @Extension
     public static class DescriptorImpl extends ParameterDescriptor {
