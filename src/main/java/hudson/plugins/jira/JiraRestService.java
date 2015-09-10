@@ -142,17 +142,18 @@ public class JiraRestService {
         final URIBuilder builder = new URIBuilder(uri)
                 .setPath(String.format("/rest/api/2/version/%s/unresolvedIssueCount", versionId));
 
+        boolean result = false;
         try {
             URI uri = builder.build();
             final String response = buildGetRequest(uri).execute().returnContent().asString();
 
             JSONObject json = new JSONObject(response);
 
-            return (Integer.parseInt(json.getString("issuesUnresolvedCount")) == 0) ? true : false;
-
+            result = (Integer.parseInt(json.getString("issuesUnresolvedCount")) != 0);
         } catch (Exception e) {
-            LOGGER.warning("jira rest client get unresolved issues count in version returned an error. cause: " + e.getMessage());
+            LOGGER.warning("JIRA rest client get unresolved issues count in version returned an error. cause: " + e.getMessage());
         }
+        return result;
     }
 
     public List<Version> getVersions(String projectKey) {

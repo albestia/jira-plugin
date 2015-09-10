@@ -99,6 +99,12 @@ public class JiraSession {
         return service.getVersions(projectKey);
     }
 
+    public boolean hasVersionUnresolvedIssues(Long versionId) {
+        LOGGER.fine("Verifying unresolved issues for Version: " + versionId);
+
+        return service.hasVersionUnresolvedIssues(versionId.toString());
+    }
+
     /**
      * Get a version by its name
      *
